@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+
+    <script type="text/javascript" src="out/production/webgl/lib/kotlin.js"></script>
+    <script type="text/javascript" src="out/production/webgl/webgl.js"></script>
+
+    <script id="reflector.glsl" type="x-shader/x-fragment">
+        #version 330 core
+        in vec3 Normal;
+        in vec3 Position;
+        out vec4 color;
+
+        uniform vec3 cameraPos;
+        uniform samplerCube skybox;
+
+        void main()
+        {
+            vec3 I = normalize(Position - cameraPos);
+            vec3 R = reflect(I, normalize(Normal));
+            color = texture(skybox, R);
+        }
+    </script>
+
+    <script id="reflector.vert.glsl" type="x-shader/x-vertex">
+        #version 330 core
+        layout (location = 0) in vec3 position;
+        layout (location = 1) in vec3 normal;
+
+        out vec3 Normal;
+        out vec3 Position;
+
+        uniform mat4 model;
+        uniform mat4 view;
+        uniform mat4 projection;
+
+        void main()
+        {
+            gl_Position = projection * view * model * vec4(position, 1.0f);
+            Normal = mat3(transpose(inverse(model))) * normal;
+            Position = vec3(model * vec4(position, 1.0f));
+        }
+    </script>
+
+    <script id="skybox.glsl" type="x-shader/x-vertex">
+        #version 330 core
+        layout (location = 0) in vec3 position;
+        out vec3 TexCoords;
+
+        uniform mat4 projection;
+        uniform mat4 view;
+
+
+        void main()
+        {
+            gl_Position =   projection * view * vec4(position, 1.0);
+            TexCoords = position;
+        }
+    </script>
+
+    <script id="skybox.frag.glsl" type="x-shader/x-fragment">
+        #version 330 core
+        in vec3 TexCoords;
+        out vec4 color;
+
+        uniform samplerCube skybox;
+
+        void main()
+        {
+            color = texture(skybox, TexCoords);
+        }
+    </script>
+</head>
+<body>
+
+</body>
+</html>
