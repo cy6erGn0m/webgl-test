@@ -1,6 +1,6 @@
 package cy.kotlin.webgl
 
-data class Vector(var values: List<Float>) {
+data class Vector(val values: List<Float>) {
     init {
         require(values.isNotEmpty())
     }

@@ -7,73 +7,100 @@
     <script type="text/javascript" src="out/production/webgl/lib/kotlin.js"></script>
     <script type="text/javascript" src="out/production/webgl/webgl.js"></script>
 
-    <script id="reflector.glsl" type="x-shader/x-fragment">
-        #version 330 core
-        in vec3 Normal;
-        in vec3 Position;
-        out vec4 color;
+    <script type="x-shader/x-vertex" id="vshaderSB">
+         uniform mat4 projection;
+         uniform mat4 modelview;
+         attribute vec3 coords;
+         varying vec3 vCoords;
 
-        uniform vec3 cameraPos;
-        uniform samplerCube skybox;
-
-        void main()
-        {
-            vec3 I = normalize(Position - cameraPos);
-            vec3 R = reflect(I, normalize(Normal));
-            color = texture(skybox, R);
-        }
+         void main() {
+            vec4 eyeCoords = modelview * vec4(coords,1.0);
+            gl_Position = projection * eyeCoords;
+            vCoords = coords;//gl_Position.xyz;
+         }
     </script>
 
-    <script id="reflector.vert.glsl" type="x-shader/x-vertex">
-        #version 330 core
-        layout (location = 0) in vec3 position;
-        layout (location = 1) in vec3 normal;
+    <script type="x-shader/x-fragment" id="fshaderSB">
+         precision mediump float;
+         varying vec3 vCoords;
+         uniform samplerCube skybox;
 
-        out vec3 Normal;
-        out vec3 Position;
-
-        uniform mat4 model;
-        uniform mat4 view;
-        uniform mat4 projection;
-
-        void main()
-        {
-            gl_Position = projection * view * model * vec4(position, 1.0f);
-            Normal = mat3(transpose(inverse(model))) * normal;
-            Position = vec3(model * vec4(position, 1.0f));
-        }
+         void main() {
+              //gl_FragColor = textureCube(skybox, vCoords);
+              gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+         }
     </script>
 
-    <script id="skybox.glsl" type="x-shader/x-vertex">
-        #version 330 core
-        layout (location = 0) in vec3 position;
-        out vec3 TexCoords;
+    <script type="x-shader/x-vertex" id="vshader">
+         uniform mat4 projection;
+         uniform mat4 modelview;
+         attribute vec3 coords;
+         attribute vec3 normal;
+         varying vec3 viewCoords;
+         varying vec3 vNormal;
 
-        uniform mat4 projection;
-        uniform mat4 view;
-
-
-        void main()
-        {
-            gl_Position =   projection * view * vec4(position, 1.0);
-            TexCoords = position;
-        }
+         void main() {
+            vec4 eyeCoords = modelview * vec4(coords,1.0);
+            gl_Position = projection * eyeCoords;
+            viewCoords = eyeCoords.xyz;
+            vNormal = normal;
+         }
     </script>
 
-    <script id="skybox.frag.glsl" type="x-shader/x-fragment">
-        #version 330 core
-        in vec3 TexCoords;
-        out vec4 color;
+    <script type="x-shader/x-fragment" id="fshader">
+         precision mediump float;
+         varying vec3 vCoords;
+         varying vec3 vNormal;
+         varying vec3 viewCoords;
+         uniform samplerCube skybox;
+         uniform mat3 normalMatrix;
+         uniform mat3 invVT;
 
-        uniform samplerCube skybox;
+         void main() {
+              vec3 N = normalMatrix * vNormal;
+              vec3 V = -viewCoords;
+              vec3 R = 2.0 * dot(V,N) * N - V;
+              R = invVT * R; // Transform by inverse of view transform, which was applied to the skybox
+              gl_FragColor = textureCube(skybox, R);
+         }
+    </script>
 
-        void main()
-        {
-            color = texture(skybox, TexCoords);
-        }
+    <script type="x-model/x-obj" id="cube">
+        v -1.000000 -1.000000 1.000000
+        v -1.000000 1.000000 1.000000
+        v 1.000000 1.000000 1.000000
+        v 1.000000 -1.000000 1.000000
+        v -1.000000 -1.000000 -1.000000
+        v -1.000000 1.000000 -1.000000
+        v 1.000000 1.000000 -1.000000
+        v 1.000000 -1.000000 -1.000000
+
+        vn 0.577350 0.577350 -0.577350
+        vn 0.577350 -0.577350 -0.577350
+        vn -0.577350 -0.577350 -0.577350
+        vn -0.577350 0.577350 -0.577350
+        vn 0.577350 0.577350 0.577350
+        vn 0.577350 -0.577350 0.577350
+        vn -0.577350 -0.577350 0.577350
+        vn -0.577350 0.577350 0.577350
+
+        g default
+        f 4//4 3//3 2//2 1//1
+        f 1//1 2//2 6//6 5//5
+        f 7//7 6//6 2//2 3//3
+        f 4//4 8//8 7//7 3//3
+        f 5//5 8//8 4//4 1//1
+        f 5//5 6//6 7//7 8//8
     </script>
 </head>
 <body>
-
+<div style="display: none">
+    <img id="tiles" src="img/tiles.jpg">
+    <img id="xneg" src="img/xneg.jpg">
+    <img id="xpos" src="img/xpos.jpg">
+    <img id="ypos" src="img/ypos.jpg">
+    <img id="zneg" src="img/zneg.jpg">
+    <img id="zpos" src="img/zpos.jpg">
+</div>
 </body>
 </html>

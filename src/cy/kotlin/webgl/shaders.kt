@@ -23,6 +23,8 @@ fun WebGLRenderingContext.linkShaders(shaders: List<WebGLShader>): WebGLProgram 
     linkProgram(shaderProgram)
 
     if (getProgramParameter(shaderProgram, WebGLRenderingContext.LINK_STATUS) in listOf(0, false, null)) {
+        console.log("Failed to link shaders", getProgramInfoLog(shaderProgram))
+        deleteProgram(shaderProgram)
         throw IllegalArgumentException("Failed to link shaders")
     }
 
@@ -35,6 +37,8 @@ fun loadShader(source: String, gl: WebGLRenderingContext, type: ShaderType): Web
     gl.compileShader(shader)
 
     if (gl.getShaderParameter(shader, WebGLRenderingContext.COMPILE_STATUS) in listOf(0, false, null)) {
+        console.log("Shader compile failure", source)
+        console.log("Shader compile failure", gl.getShaderInfoLog(shader))
         gl.deleteShader(shader)
         throw IllegalArgumentException("Shader compile failure")
     }
@@ -56,6 +60,24 @@ fun WebGLRenderingContext.loadShadersAtPage(vararg ids: String): WebGLProgram {
             .map { loadShader(it.first, this, it.second) }
 
     return linkShaders(shaders)
+}
+
+class ShaderAttributeDelegate(val gl: WebGLRenderingContext, val program: WebGLProgram): ReadWriteProperty<Any, Vector> {
+
+    override fun get(thisRef: Any, desc: PropertyMetadata): Vector {
+        throw UnsupportedOperationException()
+    }
+
+    override fun set(thisRef: Any, desc: PropertyMetadata, value: Vector) {
+        val location = gl.getAttribLocation(program, desc.name)
+        when (value.values.size()) {
+            1 -> gl.vertexAttrib1fv(location, value.values.toTypedArray())
+            2 -> gl.vertexAttrib2fv(location, value.values.toTypedArray())
+            3 -> gl.vertexAttrib3fv(location, value.values.toTypedArray())
+            4 -> gl.vertexAttrib4fv(location, value.values.toTypedArray())
+            else -> throw UnsupportedOperationException("Unsupported vector size ${value.values.size()}")
+        }
+    }
 }
 
 class ShaderUniformAttributeDelegate(val gl: WebGLRenderingContext, val program: WebGLProgram): ReadWriteProperty<Any, Vector> {
